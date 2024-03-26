@@ -9,7 +9,7 @@ public class panel extends JPanel implements Runnable {
     public void paint(Graphics g) {
         super.paint(g);
         Graphics2D graphics2D = (Graphics2D) g;
-        double[] coords = RungeKuttaODE.takeFromCoords();
+        double[] coords = Pendulum.takeFromCoords();
         int x = ((int)(((coords[0]+1.5)*500)));
         int y = ((int)(((coords[1])*-1)*500));
         graphics2D.fillOval(x, y, 30, 30);

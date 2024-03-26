@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class RungeKuttaODE {
+public class Pendulum {
     static final double L = 1.0;
     static final double g = 9.81;
     static volatile List<double[]> coords = new ArrayList<>();
@@ -17,7 +17,7 @@ public class RungeKuttaODE {
 
         SwingUtilities.invokeLater(()->{
             JFrame frame = new JFrame("Circle Panel");
-            frame.setSize(1920, 1080);
+            frame.setSize(1280, 720);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             panel panel = new panel();
             frame.setLocationRelativeTo(null);
@@ -27,7 +27,21 @@ public class RungeKuttaODE {
         });
 
     }
-    public static List<double[]> rk4(double theta, double omega, double dt){
+    public static void Euler (double theta, double omega, double dt){
+        while (true){
+            try {
+                Thread.sleep(1000/120);
+                double acceleration = f(theta);
+                omega += acceleration * dt;
+                theta += omega * dt;
+                Pendulum.addToCoords(new double[]{L * Math.sin(theta), -L * Math.cos(theta)});
+            }catch (InterruptedException e){
+                throw new RuntimeException();
+            }
+        }
+    }
+
+    public static void rk4(double theta, double omega, double dt){
         while (true){
             try {
                 Thread.sleep(1000/120);
@@ -37,7 +51,7 @@ public class RungeKuttaODE {
             double[] result = rk4calc(theta, omega, dt);
             theta = result[0];
             omega = result[1];
-            RungeKuttaODE.addToCoords(new double[]{L * Math.sin(theta), -L * Math.cos(theta)});
+            Pendulum.addToCoords(new double[]{L * Math.sin(theta), -L * Math.cos(theta)});
         }
     }
     static double[] rk4calc(double theta, double omega, double dt) {
@@ -55,13 +69,13 @@ public class RungeKuttaODE {
     }
     static synchronized void addToCoords(double[] toAdd){
         System.out.println(Arrays.toString(toAdd));
-        RungeKuttaODE.coords.add(toAdd);
+        Pendulum.coords.add(toAdd);
     }
     static synchronized double[] takeFromCoords(){
-        int size = RungeKuttaODE.coords.size()-1;
-        double[] toReturn = RungeKuttaODE.coords.get(size);
+        int size = Pendulum.coords.size()-1;
+        double[] toReturn = Pendulum.coords.get(size);
         if (size > 1000) {
-            RungeKuttaODE.coords= new ArrayList<>();
+            Pendulum.coords = new ArrayList<>();
         }
         return toReturn;
     }
