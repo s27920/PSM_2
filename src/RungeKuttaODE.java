@@ -1,73 +1,68 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class RungeKuttaODE {
-    public static ArrayList<double[]> plotData = new ArrayList<>();
-    static double t = -1;
-    static double x = -1;
-    static double y = 1;
-    static double dt = 0.01;
+    static final double L = 1.0;
+    static final double g = 9.81;
+    static volatile List<double[]> coords = new ArrayList<>();
 
     public static void main(String[] args) {
+        double theta = Math.PI / 4;
+        double omega = 0.0;
+        double dt = 0.01;
+        new Thread(()-> rk4(theta,omega,dt)).start();
+
         SwingUtilities.invokeLater(()->{
             JFrame frame = new JFrame("Circle Panel");
             frame.setSize(1920, 1080);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            panel panel = new panel(plotData);
-
-
+            panel panel = new panel();
             frame.setLocationRelativeTo(null);
             frame.setLayout(new BorderLayout());
             frame.add(panel, BorderLayout.CENTER);
             frame.setVisible(true);
         });
 
-        see(t,x,y,dt);
     }
-
-    static void see(double t, double x, double y, double dt){
-        plotData.add(new double[] {x, y});
-        while (x < 1) {
-            double[] doubles = doCalc(t,x,y,dt);
-            x += doubles[0];
-            y += doubles[1];
-            t += dt;
-            plotData.add(new double[] {x, y});
-
-        }
-//        saw(t,x,y,dt);
-    }
-    static void saw(double t, double x, double y, double dt){
-        while (x > -1) {
-            double[] doubles = doCalc(t, x, y, dt);
-            x -= doubles[0];
-            y += doubles[1];
-            t -= dt;
-            System.out.println("x: " + x + " y: " + y);
-            plotData.add(new double[]{x, y});
+    public static List<double[]> rk4(double theta, double omega, double dt){
+        while (true){
+            try {
+                Thread.sleep(1000/120);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            double[] result = rk4calc(theta, omega, dt);
+            theta = result[0];
+            omega = result[1];
+            RungeKuttaODE.addToCoords(new double[]{L * Math.sin(theta), -L * Math.cos(theta)});
         }
     }
-
-    static double[] doCalc(double t, double x, double y, double dt){
-        double k1x = fun(t, x);
-        double k2x = fun(t + dt/2, x + dt*k1x/2);
-        double k3x = fun(t + dt/2, x + dt*k2x/2);
-        double k4x = fun(t + dt, x + dt*k3x);
-
-        double k1y = fun2(t, y);
-        double k2y = fun2(t + dt/2, y + dt*k1y/2);
-        double k3y = fun2(t + dt/2, y + dt*k2y/2);
-        double k4y = fun2(t + dt, y + dt*k3y);
-
-        return new double[]{dt/6*(k1x + 2*k2x + 2*k3x + k4x),dt/6*(k1y + 2*k2y + 2*k3y + k4y),dt};
+    static double[] rk4calc(double theta, double omega, double dt) {
+        double k1_omega = f(theta);
+        double k2_theta = omega + 0.5 * dt * k1_omega;
+        double k2_omega = f(theta + 0.5 * dt * omega);
+        double k3_theta = omega + 0.5 * dt * k2_omega;
+        double k3_omega = f(theta + 0.5 * dt * k2_theta);
+        double k4_theta = omega + dt * k3_omega;
+        double k4_omega = f(theta + dt * k3_theta);
+        return new double[]{theta + (dt / 6.0) * (omega + 2.0 * k2_theta + 2.0 * k3_theta + k4_theta), omega + (dt / 6.0) * (k1_omega + 2.0 * k2_omega + 2.0 * k3_omega + k4_omega)};
     }
-
-    public static double fun(double t, double x) {
-        return 3 * t * t;
+    static double f(double theta) {
+        return -(g / L) * Math.sin(theta);
     }
-
-    public static double fun2(double t, double y) {
-        return 2 * Math.sin(t); // Example function, you can modify this as needed
+    static synchronized void addToCoords(double[] toAdd){
+        System.out.println(Arrays.toString(toAdd));
+        RungeKuttaODE.coords.add(toAdd);
+    }
+    static synchronized double[] takeFromCoords(){
+        int size = RungeKuttaODE.coords.size()-1;
+        double[] toReturn = RungeKuttaODE.coords.get(size);
+        if (size > 1000) {
+            RungeKuttaODE.coords= new ArrayList<>();
+        }
+        return toReturn;
     }
 }
